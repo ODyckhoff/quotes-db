@@ -10,16 +10,17 @@ int main(void) {
     int i;
     int c = 0;
 
-    printf("Content-Type: text/html;charset=utf-8\n\n");
+    printf( "Content-Type: text/html;charset=utf-8\n\n" );
     data = getenv("QUERY_STRING");
+
     if( data == NULL )
-        printf("<p>Error! QUERY_STRING is NULL.</p>\n");
+        printf( "<p>Error! QUERY_STRING is NULL.</p>\n" );
     else if( ( i = sscanf( data, "path=/%s", querystr ) ) != 1 )
-        printf("<p>Error! Invalid data. Code: %d</p>\n", i);
+        printf( "<p>Error! Invalid data. Code: %d</p>\n", i );
     else {
 
-        if(strcmp(querystr, "/") == 0)
-            printf("{\"error\":\"No action specified.\", \"code\":\"ENOACT\"}\n");
+        if( strcmp( querystr, "/" ) == 0 )
+            printf( "{\"error\":\"No action specified.\", \"code\":\"ENOACT\"}\n" );
         else {
             printf( "Page required: %s<br />\n", querystr );
             printf( "<ul>\n" );
@@ -38,6 +39,5 @@ int main(void) {
         }
     }
 
-    return 0;
-        
+    return 0;        
 }
