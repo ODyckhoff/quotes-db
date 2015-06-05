@@ -1,6 +1,6 @@
 RewriteEngine on  
 RewriteCond %{REQUEST_FILENAME} !-f  
-RewriteRule ^api(.*)?$ api/index.cgi?path=$1 [L,QSA]
+RewriteRule ^api(.*)$ api/index.cgi?path=$1 [L,QSA]
 
 Options +ExecCGI
 AddHandler cgi-script .cgi
