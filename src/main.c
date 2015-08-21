@@ -2,86 +2,107 @@
 #include <stdlib.h>
 #include <string.h>
 
-int main(void) {
+#include "main.h"
+#include "func/add.h"
+#include "func/get.h"
+#include "func/remove.h"
+#include "func/search.h"
+#include "err.h"
+
+int main( void ) {
     char *data;
-    char *querystr = malloc( 200 );
+    char *query;
+    char *querytmp;
     char *token;
     char **tokens;
-    char tmp = 's';
     int err = 0;
     int i;
     int c = 0;
+    int len;
 
     printf( "Content-Type: text/html;charset=utf-8\n\n" );
     data = getenv("QUERY_STRING");
+    printf( "%s\n", data );
+    query = malloc( 200 );
+    memset( query, 0, 200 );
 
     if( data == NULL )
-        printf( "<p>Error! QUERY_STRING is NULL.</p>\n" );
-    else if( ( i = sscanf( data, "path=/%s", querystr ) ) != 1 )
-        printf( "<p>Error! Invalid data. Code: %d</p>\n", i );
+        mkerr( ENODATA );
+    else if( ( i = sscanf( data, "path=/%[^\t\n]", query ) ) != 1 )
+        mkerr( EBADREQ );
     else {
-
-        if( strcmp( querystr, "/" ) == 0 )
-            printf( "{\"error\":\"No action specified.\", \"code\":\"ENOACT\"}\n" );
+        if( strcmp( query, "/" ) == 0 )
+            mkerr( ENOACT );
         else {
-            printf( "Page required: %s<br />\n", querystr );
+            printf( "Page required: %s<br />\n", query );
             printf( "<ul>\n" );
 
-            for( c = 0, i = 0; c < strlen( querystr ); c++ )
-                if( querystr[c] == '/' ) i++;
+            for( c = 0, i = 0; c < strlen( query ); c++ )
+                if( query[c] == '/' ) i++;
 
             tokens = malloc( ( i + 1 ) * sizeof( char * ) );
+            memset( tokens, 0, ( i + 1 ) );
             c = 0;
+            querytmp = query;
 
-            while( ( token = strsep( &querystr, "/" ) ) != 0 ) {
+            while( ( token = strsep( &query, "/" ) ) != 0 ) {
                 if( strcmp( token, "" ) != 0 ) {
                     printf( "<li>Token %d is: '%s'</li>\n", c+1, token );
-                    tokens[c] = malloc( strlen( token ) + 1 );
+                    len = strlen( token ) + 1;
+                    tokens[c] = malloc( len );
+                    memset( tokens[c], 0, len );
                     strncpy( tokens[c], token, strlen( token ) );
                     c++;
                 }
             }
+            free( token );
+            free( querytmp );
             printf( "</ul><br />\n" );
-            if( c == 1 ) {
-                tmp = '\0';
-            }
-            printf( "Total of %d token%c.<br />\n", c, tmp );
+            printf( "Total of %d token%s.<br />\n", 
+                        c, ( c == 1 ? "" : "s" )
+            );
 
             if( !c ) {
-                printf( "{\"error\":\"No action specified.\", \"code\":\"ENOACT\"}\n" );
+                mkerr( ENOACT );
+                cleanup( tokens, c );
                 return -1;
             }
 
             /* Read tokens and direct paths. */
             /* add, get, remove, search */
 
-            if( strcmp( tokens[i], "add" ) == 0 ) {
+            if( strcmp( tokens[0], "add" ) == 0 ) {
                 /* Add stuff. */
-                printf( "Adding stuff<br />\n" );
-                /* e.g. err = getstuff( tokens[i + 1] ); */
+                err = addhndlr( tokens, c );
             }
-            else if( strcmp( tokens[i], "get" ) == 0 ) {
+            else if( strcmp( tokens[0], "get" ) == 0 ) {
                 /* Get stuff. */
-                printf( "Getting stuff<br />\n" );
+                err = gethndlr( tokens, c );
             }
-            else if( strcmp( tokens[i], "remove" ) == 0 ) {
+            else if( strcmp( tokens[0], "remove" ) == 0 ) {
                 /* Remove stuff. */
-                printf( "Removing stuff<br />\n" );
+                err = removehndlr( tokens, c );
             }
-            else if( strcmp( tokens[i], "search" ) == 0 ) {
+            else if( strcmp( tokens[0], "search" ) == 0 ) {
                 /* Search for stuff. */
-                printf( "Searching for stuff<br />\n" );
+                err = searchhndlr( tokens, c );
             }
             else {
-                printf( "{\"error\":\"Unknown command '%s'.\", \"code\":\"EBADCMD\"}\n",
-                        tokens[i] );
-                return -2;
+                
+                mkerr( EBADCMD, tokens[0] );
             }
-
-            if( err ) return -( err );
         }
     }
 
-    return 0;        
+    cleanup( tokens, c );
+    return 0;
 
+}
+
+void cleanup( char **tokens, int c ) {
+    int i;
+    for( i = 0; i < c; i++ ) {
+        free( tokens[i] );
+    }
+    free( tokens );
 }
